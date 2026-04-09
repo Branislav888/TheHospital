@@ -1,0 +1,75 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    background: black;
+}
+.bckgrnd {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+    filter: contrast(120%) saturate(120%);
+}
+.divButtons {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+.logo {
+    width: 400px;
+    margin-bottom: 20px;
+    image-rendering: pixelated;
+    filter: 
+        drop-shadow(4px 4px 0px black)
+        contrast(110%);
+
+    transition: transform 0.1s linear;
+}
+.button {
+    width: 260px;
+    padding: 15px;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    color: white;
+    background: #222;
+    border: 4px solid #555;
+    cursor: pointer;
+    box-shadow: 
+        4px 4px 0px #000,
+        inset -4px -4px 0px #111,
+        inset 4px 4px 0px #444;
+    transform: translateY(0px);
+    transition: background 0.1s;
+}
+.button:hover {
+    background: #333;
+}
+.muteButton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+.muteIcon {
+    width: 40px;
+    height: 40px;
+    image-rendering: pixelated;
+}
+.muteButton:hover .muteIcon {
+    filter: drop-shadow(2px 2px 0px black);
+}
