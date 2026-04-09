@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Hospital | Eternal Audio Loop</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="Images/logo.png" type="image/png">
-    <title>The Hospital</title>
 </head>
 <body>
-    
-    <img class="bckgrnd" src="Images/background.png" alt="Hospital Logo">
-    <button class="muteButton">
-        <img class="muteIcon" src="Images/mute.png" alt="Mute Icon">
-    </button>
+
+    <img class="bckgrnd" src="Images/background.png" alt="Hospital Background">
+
     <div class="divButtons">
         <img class="logo" src="Images/bckgLogoNew.png" alt="Hospital Logo">
         <a href="play.html"><button class="button">Play</button></a>
@@ -21,7 +19,12 @@
         <a href="aboutus.html"><button class="button">About us</button></a>
     </div>
 
-    <script src="script.js"></script>
+    <button class="muteButton" id="muteMasterBtn" aria-label="Toggle music">
+        <img class="muteIcon" id="audioIcon" src="Images/mute.png" alt="Mute">
+    </button>
 
+    <audio id="cinematicAudio" loop autoplay preload="auto" src="Sounds/Sound.mp3"></audio>
+
+    <script src="script.js"></script>
 </body>
 </html>
