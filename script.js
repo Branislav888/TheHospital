@@ -9,7 +9,7 @@ audio.loop = true;
 audio.play().catch(() => {
     muted = true;
     audio.muted = true;
-    icon.src = "Images/mute.png";
+    icon.src = "Images/unmute.png";
 });
 
 muteBtn.onclick = () => {
