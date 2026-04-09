@@ -1,4 +1,4 @@
-* {
+*{
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -16,7 +16,7 @@ body {
     image-rendering: pixelated;
     filter: contrast(120%) saturate(120%);
 }
-.divButtons {
+.divButtons, .textContainer {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -72,4 +72,53 @@ body {
 }
 .muteButton:hover .muteIcon {
     filter: drop-shadow(2px 2px 0px black);
+}
+.text {
+    width: 650px;
+    margin: 80px auto;
+    padding: 25px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #444;
+    color: #e0e0e0;
+    font-family: "Courier New", monospace;
+    text-align: center;
+    box-shadow: 
+        4px 4px 0px #000,
+        8px 8px 0px #111;
+    position: relative;
+}
+.text::before,
+.text::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid red;
+    opacity: 0.2;
+    pointer-events: none;
+}
+.text::after {
+    border-color: cyan;
+    transform: translate(2px, -2px);
+}
+.text h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 
+        2px 2px 0px #000,
+        3px 3px 0px #666;
+}
+.line p {
+    font-size: 18px;
+    margin: 10px 0;
+    text-shadow: 
+        1px 1px 0px #000,
+        -1px -1px 0px #222;
+}
+.text {
+    animation: glitchMove 0.8s infinite;
 }
