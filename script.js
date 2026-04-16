@@ -1,4 +1,5 @@
 
+
 (function() {
     function alignButtonsWithBuilding() {
         const btns = document.querySelectorAll('.but_level');
@@ -16,3 +17,12 @@
         setTimeout(alignButtonsWithBuilding, 20);
     });
 })();
+
+function animateLogo() {
+    const logo = document.querySelector('.logo');
+    let time = Date.now() / 800;
+    let move = Math.sin(time) * 8;
+    logo.style.transform = `translateY(${move}px)`;
+    requestAnimationFrame(animateLogo);
+}
+animateLogo();
