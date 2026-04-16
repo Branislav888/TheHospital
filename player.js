@@ -2,67 +2,93 @@ const player = document.getElementById("player");
 
 let x = 100;
 let y = 0;
-let velocityY = 0;
-let velocityX = 0;
-let gravity = 0.5;
-let isJumping = false;
+
+let vy = 0;
+const gravity = 0.5;
+const jumpPower = 15;
+
+let onGround = false;
 
 let keys = {};
 
-document.addEventListener("keydown", (e) => {
-    keys[e.key] = true;
-});
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-document.addEventListener("keyup", (e) => {
-    keys[e.key] = false;
-});
+const PW = 60;
+const PH = 100;
+
+const GROUND_H = 60;
+
+const CX = 400;
+const CW = 40;
+const CH = 20;
+
+const CY = GROUND_H;
+
+function anim(src) {
+    if (!player.src.includes(src)) {
+        player.src = src;
+    }
+}
 
 function update() {
 
-    if (keys["d"]) {
-        x += 5;
-        player.src = "Images/human1.png";
-    }
+    let moving = false;
 
     if (keys["a"]) {
         x -= 5;
-        player.src = "Images/human2.png";
+        anim("Images/human2.png");
+        moving = true;
     }
 
-    if (keys["w"] && !isJumping) {
-
-        if (keys["d"]) {
-            velocityY = 10;
-            velocityX = 5;
-        }
-        else if (keys["a"]) {
-            velocityY = 10;
-            velocityX = -5;
-        }
-        else {
-            velocityY = 10;
-            velocityX = 0;
-        }
-
-        isJumping = true;
-        player.src = "Images/human5.png";
+    if (keys["d"]) {
+        x += 5;
+        anim("Images/human1.png");
+        moving = true;
     }
 
-    y += velocityY;
-    x += velocityX;
+    if (keys["w"] && onGround) {
+        vy = jumpPower;
+        onGround = false;
+        anim("Images/human5.png");
+    }
 
-    velocityY -= gravity;
-    velocityX *= 0.9;
+    vy -= gravity;
+    y += vy;
 
     if (y <= 0) {
         y = 0;
-        velocityY = 0;
-        velocityX = 0;
-        isJumping = false;
+        vy = 0;
+        onGround = true;
     }
 
-    if (!keys["a"] && !keys["d"] && !keys["w"] && !isJumping) {
-        player.src = "Images/human4.png";
+    const overlapX = x < CX + CW && x + PW > CX;
+
+    const landingOnChair =
+        vy <= 0 &&
+        y <= CY + CH &&
+        y + vy >= CY + CH;
+
+    if (overlapX && landingOnChair) {
+        y = CY + CH;
+        vy = 0;
+        onGround = true;
+    }
+
+    const verticalOverlap =
+        y < CY + CH &&
+        y + PH > CY;
+
+    if (overlapX && verticalOverlap) {
+        if (x < CX) {
+            x = CX - PW;
+        } else {
+            x = CX + CW;
+        }
+    }
+
+    if (!moving && onGround) {
+        anim("Images/human4.png");
     }
 
     player.style.left = x + "px";
