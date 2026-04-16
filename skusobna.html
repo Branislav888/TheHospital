@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>Platformovka</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: skyblue;
+}
+
+#camera {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#game {
+    position: absolute;
+    width: 3000px;
+    height: 600px;
+}
+
+#player {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+}
+
+.platform {
+    position: absolute;
+    background: #6b3f1d;
+    height: 30px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="camera">
+
+<div id="game">
+
+    <img id="player" src="Images/human4.png">
+
+    <!-- MAPA -->
+    <div class="platform" style="left:0px; bottom:0px; width:3000px;"></div>
+
+    <div class="platform" style="left:400px; bottom:150px; width:200px;"></div>
+    <div class="platform" style="left:800px; bottom:250px; width:200px;"></div>
+    <div class="platform" style="left:1200px; bottom:200px; width:200px;"></div>
+    <div class="platform" style="left:1600px; bottom:300px; width:200px;"></div>
+
+</div>
+
+</div>
+
+<script>
+const player = document.getElementById("player");
+const camera = document.getElementById("camera");
+
+let x = 100;
+let y = 100;
+
+let velocityX = 0;
+let velocityY = 0;
+
+let gravity = 0.6;
+let isJumping = false;
+
+let keys = {};
+
+// animácia
+let framesRight = [
+    "Images/human1.png",
+    "Images/human_walk1.png",
+    "Images/human_walk2.png"
+];
+
+let framesLeft = [
+    "Images/human2.png",
+    "Images/human_walk1.png",
+    "Images/human_walk2.png"
+];
+
+let frame = 0;
+let counter = 0;
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// kolízia
+function collision(nx, ny) {
+    const platforms = document.getElementsByClassName("platform");
+
+    for (let p of platforms) {
+
+        let px = p.offsetLeft;
+        let py = p.offsetTop;
+        let pw = p.offsetWidth;
+        let ph = p.offsetHeight;
+
+        if (
+            nx < px + pw &&
+            nx + 80 > px &&
+            ny < py + ph &&
+            ny + 80 > py
+        ) {
+            return p;
+        }
+    }
+    return null;
+}
+
+function update() {
+
+    let moving = false;
+    let dir = "idle";
+
+    // pohyb
+    if (keys["a"]) {
+        velocityX = -5;
+        moving = true;
+        dir = "left";
+    }
+
+    if (keys["d"]) {
+        velocityX = 5;
+        moving = true;
+        dir = "right";
+    }
+
+    if (!keys["a"] && !keys["d"]) {
+        velocityX *= 0.8;
+    }
+
+    // skok
+    if (keys["w"] && !isJumping) {
+        velocityY = 12;
+        isJumping = true;
+    }
+
+    velocityY -= gravity;
+
+    let nx = x + velocityX;
+    let ny = y + velocityY;
+
+    let hit = collision(nx, ny);
+
+    if (hit) {
+        y = hit.offsetTop + hit.offsetHeight;
+        velocityY = 0;
+        isJumping = false;
+    } else {
+        x = nx;
+        y = ny;
+    }
+
+    if (y < 0) {
+        y = 0;
+        velocityY = 0;
+        isJumping = false;
+    }
+
+    // animácia
+    if (moving && !isJumping) {
+
+        counter++;
+        if (counter > 5) {
+            counter = 0;
+            frame++;
+            if (frame >= framesRight.length) frame = 0;
+        }
+
+        player.src = (dir === "left")
+            ? framesLeft[frame]
+            : framesRight[frame];
+
+    } else if (!isJumping) {
+        player.src = "Images/human4.png";
+        frame = 0;
+    }
+
+    // kamera
+    camera.style.transform = `translateX(${-x + 300}px)`;
+
+    player.style.left = x + "px";
+    player.style.bottom = y + "px";
+
+    requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>

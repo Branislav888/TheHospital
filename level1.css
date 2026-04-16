@@ -1,0 +1,13 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #87CEEB;
+}
+
+#player {
+    position: absolute;
+    width: 60px;
+    height: 100px;
+    left: 100px;
+    bottom: 0;
+}
