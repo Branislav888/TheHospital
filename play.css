@@ -81,7 +81,7 @@ body {
 .divButtons a:first-child { top: 20px; left: 20px; }
 .divButtons a:nth-child(2) { left: 27%; top: 56%; }
 .divButtons a:nth-child(3) { left: 14%; top: 45%; }
-.divButtons a:nth-child(4) { left: 34%; top: 19%; }
+.divButtons a:nth-child(4) { left: 34%; top: 15%; }
 .divButtons a:nth-child(5) { left: 63.5%; top: 39.5%; }
 .divButtons a:nth-child(6) { left: 73%; top: 49.5%; }
 .divButtons a:nth-child(7) { left: 58%; top: 61%; }

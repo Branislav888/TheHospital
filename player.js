@@ -19,7 +19,6 @@ document.addEventListener("keyup", (e) => {
 
 function update() {
 
-    // pohyb do strán
     if (keys["d"]) {
         x += 5;
         player.src = "Images/human1.png";
@@ -30,7 +29,6 @@ function update() {
         player.src = "Images/human2.png";
     }
 
-    // SKOKY DO STRÁN
     if (keys["w"] && !isJumping) {
 
         if (keys["d"]) {
@@ -50,7 +48,6 @@ function update() {
         player.src = "Images/human5.png";
     }
 
-    // fyzika
     y += velocityY;
     x += velocityX;
 
@@ -64,7 +61,6 @@ function update() {
         isJumping = false;
     }
 
-    // ⭐ DOPLNENÉ IDLE (human4.png)
     if (!keys["a"] && !keys["d"] && !keys["w"] && !isJumping) {
         player.src = "Images/human4.png";
     }
