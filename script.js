@@ -1,5 +1,4 @@
 
-
 (function() {
     function alignButtonsWithBuilding() {
         const btns = document.querySelectorAll('.but_level');
