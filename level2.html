@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="sk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Hospital - Level 3: Impossible Mode</title>
+
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #1a0514 0%, #31051a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        .game-container {
+            background: #000000aa;
+            border-radius: 32px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8);
+        }
+
+        #viewport {
+            width: 1100px;
+            height: 550px;
+            position: relative;
+            border-radius: 20px;
+            box-shadow: 0 0 0 5px #ff007f, 0 12px 28px black;
+            overflow: hidden;
+        }
+
+        #game-world {
+            position: absolute;
+            width: 5000px;
+            height: 100%;
+            bottom: 0;
+            left: 0;
+
+            background-image: url("Images/bbcklvl1.png");
+            background-repeat: repeat-x;
+            background-size: auto 100%;
+            background-position: bottom left;
+        }
+
+        #player {
+            position: absolute;
+            width: 70px;
+            z-index: 10;
+        }
+
+        .needle {
+            position: absolute;
+            width: 18px;
+            height: 50px;
+            z-index: 8;
+        }
+
+        .needle img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #door {
+            position: absolute;
+            width: 100px;
+            height: 220px;
+            z-index: 2;
+            filter: drop-shadow(0 0 10px #ff007f);
+        }
+
+        .image-zone {
+            position: absolute;
+            overflow: hidden;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 0, 127, 0.4);
+            box-shadow: 0 0 18px rgba(255, 0, 127, 0.25);
+        }
+
+        .image-zone img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            background: #200020;
+            padding: 12px 25px;
+            border-radius: 60px;
+            color: #ff007f;
+            border: 1px solid #ff007f;
+        }
+
+        button {
+            background: #ff007f;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 60px;
+            cursor: pointer;
+        }
+        .needle img {
+            width: 70px;
+            height: auto;
+            object-fit: contain;
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="game-container">
+
+    <div id="viewport">
+        <div id="game-world">
+
+            <img id="player" src="Images/human4.png">
+
+            <div class="image-zone" style="left: 1000px; bottom: 0; width: 600px; height: 120px;">
+                <img src="Images/zone1.png">
+            </div>
+
+            <div class="image-zone" style="left: 2200px; bottom: 0; width: 800px; height: 120px;">
+                <img src="Images/zone1.png">
+            </div>
+
+            <div class="image-zone" style="left: 3800px; bottom: 0; width: 600px; height: 120px;">
+                <img src="Images/zone1.png">
+            </div>
+
+            <img id="door" src="Images/door.png" style="left: 4575px; bottom: 130px; height: 225px; width: 98px;">
+
+        </div>
+    </div>
+
+    <div class="info-panel">
+        <button id="stopBtn">STOP (SPACE)</button>
+        <button id="resetBtn">REŠTART (R)</button>
+    </div>
+
+</div>
+
+<script>
+const world = document.getElementById("game-world");
+const player = document.getElementById("player");
+const door = document.getElementById("door");
+const resetBtn = document.getElementById("resetBtn");
+const stopBtn = document.getElementById("stopBtn");
+
+let paused = false;
+
+const framesRight = ["Images/human1.png", "Images/human5.png", "Images/human3.png"];
+const framesLeft = ["Images/human2.png", "Images/human6.png", "Images/human7.png"];
+
+let x = 100, y = 0, vy = 0;
+let frameIndex = 0, animCooldown = 0;
+let keys = {};
+let onGround = true;
+let needles = [];
+
+const GROUND_OFFSET = 35;
+
+document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.code === "Space") {
+        paused = !paused;
+    }
+
+    if (e.key.toLowerCase() === 'r') reset();
+});
+
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+stopBtn.onclick = () => paused = !paused;
+resetBtn.onclick = reset;
+
+function reset() {
+    x = 100;
+    y = 0;
+    vy = 0;
+
+    needles.forEach(n => n.el.remove());
+    needles = [];
+
+    world.style.transform = `translateX(0px)`;
+}
+
+function createNeedle() {
+    const el = document.createElement("div");
+    el.className = "needle";
+
+    const img = document.createElement("img");
+    img.src = "Images/needle.png";
+
+    el.appendChild(img);
+
+    const spawnX = Math.random() * 4950;
+    el.style.left = spawnX + "px";
+    el.style.top = "-60px";
+
+    world.appendChild(el);
+
+    needles.push({
+        el,
+        x: spawnX,
+        y: -60,
+        speed: 2 + Math.random() * 10
+    });
+}
+
+function update() {
+
+    if (paused) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    let speedMult = 1;
+
+    document.querySelectorAll(".image-zone").forEach(z => {
+        const zx = parseInt(z.style.left);
+        const zw = parseInt(z.style.width);
+
+        if (x + 35 > zx && x < zx + zw && y < 120) {
+            speedMult = 0.4;
+        }
+    });
+
+    if (keys["a"]) x -= 7 * speedMult;
+    if (keys["d"]) x += 7 * speedMult;
+
+    if (keys["w"] && onGround) {
+        vy = 15;
+        onGround = false;
+    }
+
+    vy -= 0.8;
+    y += vy;
+
+    if (y <= GROUND_OFFSET) {
+        y = GROUND_OFFSET;
+        vy = 0;
+        onGround = true;
+    }
+
+    if (x < 0) x = 0;
+    if (x > 4930) x = 4930;
+
+    if (Math.random() < 0.15) createNeedle();
+
+    needles.forEach((n, i) => {
+        n.y += n.speed;
+        n.el.style.top = n.y + "px";
+
+        const pRect = {
+            l: x,
+            r: x + 60,
+            t: 550 - y - 100 + GROUND_OFFSET,
+            b: 550 - y + GROUND_OFFSET
+        };
+
+        const nRect = {
+            l: n.x,
+            r: n.x + 18,
+            t: n.y,
+            b: n.y + 50
+        };
+
+        if (
+            pRect.l < nRect.r &&
+            pRect.r > nRect.l &&
+            pRect.t < nRect.b &&
+            pRect.b > nRect.t
+        ) {
+            reset();
+        }
+
+        if (n.y > 550) {
+            n.el.remove();
+            needles.splice(i, 1);
+        }
+    });
+
+    const doorX = parseInt(door.style.left);
+
+    if (
+        x + 60 > doorX &&
+        x < doorX + 100 &&
+        y < 250
+    ) {
+        window.location.href = "level3.html";
+    }
+
+    if (keys["a"] || keys["d"]) {
+        if (animCooldown-- <= 0) {
+            const frames = keys["a"] ? framesLeft : framesRight;
+            player.src = frames[frameIndex];
+            frameIndex = (frameIndex + 1) % 3;
+            animCooldown = 6;
+        }
+    } else {
+        player.src = "Images/human4.png";
+    }
+
+    player.style.left = x + "px";
+    player.style.bottom = y + "px";
+
+    let scrollX = x - 500;
+    if (scrollX < 0) scrollX = 0;
+    if (scrollX > 3900) scrollX = 3900;
+
+    world.style.transform = `translateX(${-scrollX}px)`;
+
+    requestAnimationFrame(update);
+}
+
+update();
+</script>
+
+</body>
+</html>
