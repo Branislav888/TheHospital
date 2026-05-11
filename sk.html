@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>Level 3</title>
+
+<style>
+body {
+    margin: 0;
+    background: #0f0f1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    font-family: Arial;
+}
+
+.game-container {
+    background: #000000aa;
+    border-radius: 32px;
+    padding: 20px;
+    box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8);
+}
+
+#viewport {
+    width: 1100px;
+    height: 550px;
+    position: relative;
+    border-radius: 20px;
+    box-shadow: 0 0 0 5px #ff007f, 0 12px 28px black;
+    overflow: hidden;
+    background: black;
+}
+
+#background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+
+.platform {
+    position: absolute;
+    width: 100px;
+    height: 12px;
+    border-radius: 6px;
+    z-index: 3;
+    background: none;
+}
+
+.window {
+    position: absolute;
+    width: 190px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+}
+
+.door {
+    position: absolute;
+    height: 170px;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+}
+
+#player {
+    position: absolute;
+    height: 90px;
+    z-index: 5;
+}
+
+/* DEATH */
+#deathScreen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.5s;
+    z-index: 20;
+}
+
+#deathScreen.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#deathScreen h1 {
+    font-size: 70px;
+    color: #ff007f;
+}
+
+/* 🔥 IMPROVED INFO PANEL */
+.info-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    background: linear-gradient(145deg, #200020, #120012);
+    padding: 14px 25px;
+    border-radius: 60px;
+    color: #ff007f;
+    border: 1px solid #ff007f;
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.25);
+}
+
+/* LEFT SIDE INFO */
+.info-left {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* STATUS */
+.status {
+    padding: 6px 14px;
+    border-radius: 30px;
+    background: #ff007f;
+    color: white;
+    font-size: 12px;
+}
+
+/* BUTTONS */
+.info-right {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background: #ff007f;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 10px 18px;
+    border-radius: 60px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<div class="game-container">
+
+    <div id="viewport">
+        <img id="background" src="Images/bc_level3.png">
+        <img id="player" src="Images/human4.png">
+
+        <div id="deathScreen">
+            <h1>You Died</h1>
+            <p>Restarting...</p>
+        </div>
+    </div>
+
+    <!-- 🔥 NEW INFO PANEL -->
+    <div class="info-panel">
+
+        <div class="info-left">
+            <div>LEVEL 3</div>
+            <div id="status" class="status">RUNNING</div>
+        </div>
+
+        <div class="info-right">
+            <button id="stopBtn">STOP</button>
+            <button id="resetBtn">REŠTART</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const viewport = document.getElementById("viewport");
+const player = document.getElementById("player");
+const deathScreen = document.getElementById("deathScreen");
+
+const stopBtn = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
+const status = document.getElementById("status");
+
+let x = 525;
+let y = 400;
+let vx = 0;
+let vy = 0;
+
+const gravity = 0.45;
+const jumpPower = -13;
+
+let keys = {};
+let dead = false;
+let paused = false;
+
+/* INPUT */
+document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.code === "Space") togglePause();
+    if (e.key.toLowerCase() === "r") reset();
+});
+
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+stopBtn.onclick = togglePause;
+resetBtn.onclick = reset;
+
+function togglePause() {
+    paused = !paused;
+    status.textContent = paused ? "PAUSED" : "RUNNING";
+    status.style.background = paused ? "#555" : "#ff007f";
+}
+
+/* LEVEL */
+const levelData = [
+    {x: 500, y: 550},
+    {x: 500, y: 520},
+    {x: 300, y: 450},
+    {x: 700, y: 380},
+    {x: 450, y: 300},
+    {x: 200, y: 220},
+    {x: 600, y: 140},
+    {x: 350, y: 100},
+    {x: 550, y: -20},
+    {x: 250, y: -100},
+    {x: 650, y: -180},
+    {x: 400, y: -260},
+    {x: 750, y: -340},
+    {x: 300, y: -420},
+    {x: 500, y: -500},
+];
+
+let platforms = [];
+
+const topPlatform = levelData.reduce((min, p) => p.y < min.y ? p : min, levelData[0]);
+
+function createMap() {
+    levelData.forEach(p => {
+        const platform = document.createElement("div");
+        platform.className = "platform";
+        platform.style.left = p.x + "px";
+        platform.style.top = p.y + "px";
+
+        const obj = { x: p.x, y: p.y, el: platform, jumps: 0, broken: false };
+
+        if (p === topPlatform) {
+            const door = document.createElement("img");
+            door.src = "Images/door.png";
+            door.className = "door";
+            platform.appendChild(door);
+            obj.isDoor = true;
+        } else {
+            const windowEl = document.createElement("img");
+            windowEl.src = "Images/window.png";
+            windowEl.className = "window";
+            platform.appendChild(windowEl);
+        }
+
+        viewport.appendChild(platform);
+        platforms.push(obj);
+    });
+}
+createMap();
+
+/* RESET */
+function reset() {
+    x = 525;
+    y = 400;
+    vx = 0;
+    vy = 0;
+    dead = false;
+    paused = false;
+    status.textContent = "RUNNING";
+    status.style.background = "#ff007f";
+    deathScreen.classList.remove("show");
+}
+
+/* DIE */
+function die() {
+    if (dead) return;
+    dead = true;
+    deathScreen.classList.add("show");
+    setTimeout(reset, 2000);
+}
+
+/* LOOP */
+function loop() {
+
+    if (!paused && !dead) {
+
+        vx = keys["a"] ? -6 : keys["d"] ? 6 : 0;
+
+        x += vx;
+
+        vy += gravity;
+        y += vy;
+
+        if (x < 0) x = 0;
+        if (x > 1045) x = 1045;
+
+        platforms.forEach(p => {
+            if (p.broken) return;
+
+            if (
+                x < p.x + 100 &&
+                x + 55 > p.x &&
+                y + 55 > p.y &&
+                y + 55 < p.y + 15 &&
+                vy > 0
+            ) {
+                vy = jumpPower;
+                p.jumps++;
+
+                if (p.jumps >= 2) {
+                    p.broken = true;
+                    p.el.style.opacity = "0";
+                    p.el.style.transform = "scale(0)";
+                }
+            }
+        });
+
+        if (y > 650) die();
+
+        player.style.left = x + "px";
+        player.style.top = y + "px";
+    }
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
