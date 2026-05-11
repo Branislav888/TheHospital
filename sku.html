@@ -1,391 +1,275 @@
 <!DOCTYPE html>
 <html lang="sk">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hospital - Level 1</title>
+<meta charset="UTF-8">
+<title>Level 3</title>
 
-    <style>
-        * {
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
-        }
+<style>
+body {
+    margin: 0;
+    background: #0f0f1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: linear-gradient(145deg, #1a0514 0%, #31051a 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Courier New', monospace;
-            overflow: hidden;
-        }
+#viewport {
+    width: 1100px;
+    height: 550px;
+    position: relative;
+    border-radius: 20px;
+    box-shadow: 0 0 0 5px #ff007f, 0 12px 28px black;
+    overflow: hidden;
+    background: black;
+}
 
-        .game-container {
-            background: #000000aa;
-            border-radius: 32px;
-            padding: 20px;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.8);
-        }
+#background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
 
-        #viewport {
-            width: 1100px;
-            height: 550px;
-            position: relative;
-            border-radius: 20px;
-            box-shadow: 0 0 0 5px #ff007f, 0 12px 28px black;
-            overflow: hidden;
-        }
+.platform {
+    position: absolute;
+    width: 100px;
+    height: 12px;
+    background: none; ;
+    border-radius: 6px;
+    z-index: 3;
+    overflow: visible;
+}
 
-        #game {
-            position: relative;
-            width: 2000px;
-            height: 100%;
-            background-image: url("Images/bbcklvl1.png");
-            background-size: cover;
-            background-position: center;
-        }
+.window {
+    position: absolute;
+    width: 190px;
+    height: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+}
 
-        #player {
-            position: absolute;
-            width: 70px;
-            z-index: 10;
-        }
+.door {
+    position: absolute;
+    width: auto;
+    height: 170px;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+}
 
-        .chair {
-            position: absolute;
-            width: 80px;
-        }
+#player {
+    position: absolute;
+    height: 90px;
+    z-index: 5;
+}
 
-        #chairBoost {
-            position: absolute;
-            width: 80px;
-            filter: hue-rotate(180deg) brightness(1.3);
-        }
+#deathScreen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    font-family: Arial;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.5s;
+    z-index: 20;
+}
 
-        #door {
-            position: absolute;
-            width: 150px;
-            filter: drop-shadow(0 0 10px #ff007f);
-        }
+#deathScreen.show {
+    opacity: 1;
+    pointer-events: auto;
+}
 
-        .info-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            background: #200020;
-            padding: 12px 25px;
-            border-radius: 60px;
-            color: #ff007f;
-            border: 1px solid #ff007f;
-        }
-
-        button {
-            background: #ff007f;
-            border: none;
-            color: white;
-            font-weight: bold;
-            padding: 10px 20px;
-            border-radius: 60px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 12px #ff007f;
-        }
-    </style>
+#deathScreen h1 {
+    font-size: 70px;
+    color: #ff007f;
+}
+</style>
 </head>
 
 <body>
 
-<div class="game-container">
+<div id="viewport">
 
-    <div id="viewport">
-        <div id="game">
+    <img id="background" src="Images/bc_level3.png">
+    <img id="player" src="Images/human4.png">
 
-            <img id="player" src="Images/human4.png">
-
-            <img class="chair" src="Images/chair.png">
-            <img class="chair" src="Images/chair.png">
-            <img class="chair" src="Images/chair.png">
-            <img class="chair" src="Images/chair.png">
-            <img class="chair" src="Images/chair.png">
-
-            <img id="chairBoost" src="Images/chair.png">
-
-            <img id="door" src="Images/door.png">
-
-        </div>
-    </div>
-
-    <div class="info-panel">
-        <button id="stopBtn">STOP (SPACE)</button>
-        <button id="resetBtn">REŠTART (R)</button>
+    <div id="deathScreen">
+        <h1>You Died</h1>
+        <p>Restarting...</p>
     </div>
 
 </div>
 
 <script>
-
+const viewport = document.getElementById("viewport");
 const player = document.getElementById("player");
-const chairs = document.querySelectorAll(".chair");
-const chairBoost = document.getElementById("chairBoost");
-const door = document.getElementById("door");
+const deathScreen = document.getElementById("deathScreen");
 
-const stopBtn = document.getElementById("stopBtn");
-const resetBtn = document.getElementById("resetBtn");
-
-let paused = false;
-
-const framesRight = [
-    "Images/human1.png",
-    "Images/human5.png",
-    "Images/human3.png"
-];
-
-const framesLeft = [
-    "Images/human2.png",
-    "Images/human6.png",
-    "Images/human7.png"
-];
-
-let frameIndexRight = 0;
-let frameIndexLeft = 0;
-let animCooldown = 0;
-
-let x = 100;
-let y = 0;
+let x = 525;
+let y = 400;
+let vx = 0;
 let vy = 0;
 
-const gravity = 0.5;
-const jumpPower = 15;
-const boostPower = 18;
-const moveSpeed = 6;
+const gravity = 0.45;
+const jumpPower = -13;
 
-let onGround = false;
 let keys = {};
+let dead = false;
 
-document.addEventListener("keydown", e => {
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-    keys[e.key.toLowerCase()] = true;
-
-    if (e.code === "Space") {
-        paused = !paused;
-    }
-
-    if (e.key.toLowerCase() === "r") {
-        resetGame();
-    }
-});
-
-document.addEventListener("keyup", e => {
-    keys[e.key.toLowerCase()] = false;
-});
-
-stopBtn.onclick = () => paused = !paused;
-resetBtn.onclick = resetGame;
-
-function resetGame() {
-    x = 100;
-    y = 0;
-    vy = 0;
-}
-
-const PW = 60;
-const PH = 100;
-
-const platforms = [
-    { baseX: 300, baseY: 450, amp: 60, speed: 0.02 },
-    { baseX: 600, baseY: 400, amp: 80, speed: 0.03 },
-    { baseX: 900, baseY: 450, amp: 140, speed: 0.025 },
-    { baseX: 1200, baseY: 400, amp: 70, speed: 0.02 },
-    { baseX: 1500, baseY: 350, amp: 90, speed: 0.015 }
+const levelData = [
+    {x: 500, y: 550},
+    {x: 500, y: 520},
+    {x: 300, y: 450},
+    {x: 700, y: 380},
+    {x: 450, y: 300},
+    {x: 200, y: 220},
+    {x: 600, y: 140},
+    {x: 350, y: 100},
+    {x: 550, y: -20},
+    {x: 250, y: -100},
+    {x: 650, y: -180},
+    {x: 400, y: -260},
+    {x: 750, y: -340},
+    {x: 300, y: -420},
+    {x: 500, y: -500},
 ];
 
-const boostPlatform = {
-    baseX: 850,
-    baseY: 0,
-    vx: 0
-};
+let platforms = [];
 
-function anim(src) {
-    player.src = src;
-}
+const topPlatform = levelData.reduce((min, p) => p.y < min.y ? p : min, levelData[0]);
 
-let time = 0;
+function createMap() {
+    levelData.forEach(p => {
 
-function update() {
+        const platform = document.createElement("div");
+        platform.className = "platform";
+        platform.style.left = p.x + "px";
+        platform.style.top = p.y + "px";
 
-    requestAnimationFrame(update);
+        const obj = {
+            x: p.x,
+            y: p.y,
+            el: platform,
+            jumps: 0,
+            broken: false
+        };
 
-    if (paused) return;
+        const isTop = (p === topPlatform);
 
-    time++;
+        if (isTop) {
+            const door = document.createElement("img");
+            door.src = "Images/door.png";
+            door.className = "door";
+            platform.appendChild(door);
 
-    if (keys["a"]) x -= moveSpeed;
-    if (keys["d"]) x += moveSpeed;
-
-    if (keys["w"] && onGround) {
-        vy = jumpPower;
-        onGround = false;
-    }
-
-    vy -= gravity;
-    y += vy;
-
-    if (y < 0) {
-        y = 0;
-        vy = 0;
-        onGround = true;
-    }
-
-    const pLeft = x;
-    const pRight = x + PW;
-    const pBottom = y;
-    const pTop = y + PH;
-
-    let groundedThisFrame = false;
-
-    chairs.forEach((chair, i) => {
-
-        const p = platforms[i];
-
-        const cx = p.baseX;
-        const cy = p.baseY + Math.sin(time * p.speed) * p.amp;
-
-        chair.style.left = cx + "px";
-        chair.style.bottom = cy + "px";
-
-        const cLeft = cx;
-        const cRight = cx + 80;
-        const cTop = cy + 100;
-
-        const overlapX =
-            pRight > cLeft &&
-            pLeft < cRight;
-
-        const landing =
-            vy <= 0 &&
-            overlapX &&
-            pBottom <= cTop &&
-            pBottom - vy >= cTop;
-
-        if (landing) {
-            y = cTop;
-            vy = 0;
-            groundedThisFrame = true;
+            obj.isDoor = true;
+        } else {
+            const windowEl = document.createElement("img");
+            windowEl.src = "Images/window.png";
+            windowEl.className = "window";
+            platform.appendChild(windowEl);
         }
+
+        viewport.appendChild(platform);
+        platforms.push(obj);
     });
-
-    const bLeft = boostPlatform.baseX;
-    const bRight = bLeft + 80;
-    const bTop = boostPlatform.baseY + 100;
-
-    const overlapX =
-        pRight > bLeft &&
-        pLeft < bRight;
-
-    const overlapY =
-        pBottom < bTop &&
-        pTop > boostPlatform.baseY;
-
-    const touch = overlapX && overlapY;
-
-    if (touch) {
-        if (keys["a"]) boostPlatform.vx = -3;
-        else if (keys["d"]) boostPlatform.vx = 3;
-        else boostPlatform.vx *= 0.8;
-    } else {
-        boostPlatform.vx *= 0.95;
-    }
-
-    boostPlatform.baseX += boostPlatform.vx;
-
-    if (touch) {
-        if (x < bLeft) x = bLeft - PW;
-        else if (x > bRight - PW) x = bRight;
-    }
-
-    chairBoost.style.left = boostPlatform.baseX + "px";
-    chairBoost.style.bottom = boostPlatform.baseY + "px";
-
-    const landingBoost =
-        vy <= 0 &&
-        overlapX &&
-        pBottom <= bTop &&
-        pBottom - vy >= bTop;
-
-    if (landingBoost) {
-        y = bTop;
-        vy = boostPower;
-        onGround = false;
-    }
-
-    if (groundedThisFrame) onGround = true;
-
-    const dx = 20;
-    const dy = 600;
-
-    door.style.left = dx + "px";
-    door.style.bottom = dy + "px";
-
-    if (
-        x < dx + 90 &&
-        x + PW > dx &&
-        y < dy + 120 &&
-        y + PH > dy
-    ) {
-        alert("WIN!");
-        resetGame();
-    }
-
-    if (keys["a"] && keys["w"]) {
-        anim("Images/human6.png");
-    }
-    else if (keys["d"] && keys["w"]) {
-        anim("Images/human1.png");
-    }
-    else if (keys["w"]) {
-        anim("Images/human4.png");
-    }
-    else if (keys["a"]) {
-
-        if (animCooldown <= 0) {
-            anim(framesLeft[frameIndexLeft]);
-            frameIndexLeft = (frameIndexLeft + 1) % framesLeft.length;
-            animCooldown = 6;
-        } else {
-            animCooldown--;
-        }
-
-    }
-    else if (keys["d"]) {
-
-        if (animCooldown <= 0) {
-            anim(framesRight[frameIndexRight]);
-            frameIndexRight = (frameIndexRight + 1) % framesRight.length;
-            animCooldown = 6;
-        } else {
-            animCooldown--;
-        }
-
-    }
-    else {
-        anim("Images/human4.png");
-    }
-
-    player.style.left = x + "px";
-    player.style.bottom = y + "px";
 }
 
-update();
+createMap();
 
+let doorData = topPlatform;
+
+function die() {
+    if (dead) return;
+
+    dead = true;
+    deathScreen.classList.add("show");
+
+    setTimeout(() => location.reload(), 2000);
+}
+
+function loop() {
+
+    if (!dead) {
+
+        if (keys["a"]) vx = -6;
+        else if (keys["d"]) vx = 6;
+        else vx = 0;
+
+        x += vx;
+
+        vy += gravity;
+        y += vy;
+
+        if (x < 0) x = 0;
+        if (x > 1045) x = 1045;
+
+        platforms.forEach(p => {
+
+            if (p.broken) return;
+
+            if (
+                x < p.x + 100 &&
+                x + 55 > p.x &&
+                y + 55 > p.y &&
+                y + 55 < p.y + 15 &&
+                vy > 0
+            ) {
+                vy = jumpPower;
+                p.jumps++;
+
+                if (p.jumps >= 2) {
+                    p.broken = true;
+                    p.el.style.transition = "0.4s";
+                    p.el.style.opacity = "0";
+                    p.el.style.transform = "scale(0)";
+                }
+            }
+        });
+
+        if (y < 250) {
+            let diff = 250 - y;
+            y = 250;
+
+            platforms.forEach(p => {
+                p.y += diff;
+                p.el.style.top = p.y + "px";
+            });
+
+            doorData.y += diff;
+        }
+
+        if (
+            x < doorData.x + 90 &&
+            x + 55 > doorData.x &&
+            y < doorData.y + 120 &&
+            y + 55 > doorData.y
+        ) {
+            window.location.href = "foto_level3.html";
+        }
+
+        if (y > 650) die();
+
+        player.style.left = x + "px";
+        player.style.top = y + "px";
+    }
+
+    requestAnimationFrame(loop);
+}
+
+loop();
 </script>
 
 </body>
