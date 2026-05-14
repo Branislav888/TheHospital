@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Level 1</title>
+    <title>The Hospital - Flying Chairs</title>
     <style>
         * {
             user-select: none;
@@ -69,14 +69,15 @@
 
 <body>
 
-    <div class="game-container">
-        <div id="viewport">
-            <canvas id="gameCanvas"></canvas>
-        </div>
-        <div class="info-panel">
-            <button id="resetBtn">REŠTART (R)</button>
-        </div>
+<div class="game-container">
+    <div id="viewport">
+        <canvas id="gameCanvas"></canvas>
     </div>
+    <div class="info-panel">
+        <div>MODRÉ STOLIČKY LIETAJÚ, TYRKYSOVÁ ŽIARI</div>
+        <button id="resetBtn">REŠTART (R)</button>
+    </div>
+</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -86,41 +87,43 @@
         canvas.width = 1100;
         canvas.height = 550;
 
-        const images = {};
-        const imgSources = {
-            player: "Images/human4.png",
-            bg: "Images/bbcklvl1.png",
-            chair: "Images/chair.png",
-            window: "Images/window.png"
-        };
+const images = {};
+const imgSources = {
+    player: "Images/human4.png",
+    bg: "Images/bbcklvl1.png",
+    chair: "Images/chair.png",
+    door: "Images/door.png"
+};
 
         Object.keys(imgSources).forEach(key => {
             images[key] = new Image();
             images[key].src = imgSources[key];
         });
 
-        let player = {
-            x: 100, y: 430, w: 60, h: 100,
-            vx: 0, vy: 0,
-            speed: 6, jumpPower: -15, gravity: 0.7, onGround: false
-        };
+let player = {
+    x: 100, y: 430, w: 60, h: 100,
+    vx: 0, vy: 0,
+    speed: 6, jumpPower: -15, gravity: 0.7, onGround: false
+};
 
-        const platforms = [
-            { baseX: 500, baseY: 280, w: 80, h: 90, amp: 50, speed: 0.02, offset: 0, currentY: 280 },
-            { baseX: 800, baseY: 220, w: 80, h: 90, amp: 70, speed: 0.03, offset: 2, currentY: 220 },
-            { baseX: 1100, baseY: 160, w: 80, h: 90, amp: 40, speed: 0.02, offset: 4, currentY: 160 },
-            { baseX: 1400, baseY: 250, w: 80, h: 90, amp: 60, speed: 0.025, offset: 1, currentY: 250 },
-            { baseX: 1700, baseY: 200, w: 80, h: 90, amp: 80, speed: 0.015, offset: 3, currentY: 200 }
-        ];
+// Bežné stoličky s pridaným pohybom
+const platforms = [
+    { baseX: 500, baseY: 280, w: 80, h: 90, amp: 50, speed: 0.02, offset: 0, currentY: 280 },
+    { baseX: 800, baseY: 220, w: 80, h: 90, amp: 70, speed: 0.03, offset: 2, currentY: 220 },
+    { baseX: 1100, baseY: 160, w: 80, h: 90, amp: 40, speed: 0.02, offset: 4, currentY: 160 },
+    { baseX: 1400, baseY: 250, w: 80, h: 90, amp: 60, speed: 0.025, offset: 1, currentY: 250 },
+    { baseX: 1700, baseY: 200, w: 80, h: 90, amp: 80, speed: 0.015, offset: 3, currentY: 200 }
+];
 
-        let boostChair = {
-            x: 350, y: 430, w: 80, h: 100, vx: 0
-        };
+let boostChair = {
+    x: 350, y: 430, w: 80, h: 100, vx: 0
+};
 
-        const window = { x: 1900, y: 80, w: 100, h: 160 };
-        let cameraX = 0;
-        let keys = {};
-        let time = 0;
+// Dvere sú trocha nižšie (y: 80), aby sa na ne dalo lepšie dopadnúť
+const door = { x: 1900, y: 80, w: 100, h: 160 };
+let cameraX = 0;
+let keys = {};
+let time = 0;
 
         document.addEventListener("keydown", e => {
             keys[e.key.toLowerCase()] = true;
@@ -134,12 +137,13 @@
         }
         resetBtn.onclick = reset;
 
-        function update() {
-            time++;
-
-            if (keys["a"]) player.vx = -player.speed;
-            else if (keys["d"]) player.vx = player.speed;
-            else player.vx = 0;
+function update() {
+    time++;
+    
+    // Pohyb hráča
+    if (keys["a"]) player.vx = -player.speed;
+    else if (keys["d"]) player.vx = player.speed;
+    else player.vx = 0;
 
             if (keys["w"] && player.onGround) {
                 player.vy = player.jumpPower;
@@ -150,72 +154,74 @@
             player.x += player.vx;
             player.y += player.vy;
 
-            if (player.y + player.h > 530) {
-                player.y = 530 - player.h;
-                player.vy = 0;
-                player.onGround = true;
-            }
+    // Podlaha
+    if (player.y + player.h > 530) {
+        player.y = 530 - player.h;
+        player.vy = 0;
+        player.onGround = true;
+    }
 
-            let pMid = player.x + player.w / 2;
-            let bMid = boostChair.x + boostChair.w / 2;
+    // --- POSÚVANIE BOOST CHAIR (Tyrkysová) ---
+    let pMid = player.x + player.w/2;
+    let bMid = boostChair.x + boostChair.w/2;
 
-            if (player.x + player.w > boostChair.x && player.x < boostChair.x + boostChair.w &&
-                player.y + player.h > boostChair.y + 10) {
-                if (pMid < bMid) {
-                    boostChair.vx = 5;
-                    player.x = boostChair.x - player.w;
-                } else {
-                    boostChair.vx = -5;
-                    player.x = boostChair.x + boostChair.w;
-                }
-            } else {
-                boostChair.vx *= 0.8;
-            }
-            boostChair.x += boostChair.vx;
+    if (player.x + player.w > boostChair.x && player.x < boostChair.x + boostChair.w &&
+        player.y + player.h > boostChair.y + 10) {
+        if (pMid < bMid) {
+            boostChair.vx = 5;
+            player.x = boostChair.x - player.w;
+        } else {
+            boostChair.vx = -5;
+            player.x = boostChair.x + boostChair.w;
+        }
+    } else {
+        boostChair.vx *= 0.8;
+    }
+    boostChair.x += boostChair.vx;
 
-            // Odraz zvrchu (Boost)
-            if (player.vy > 0 &&
-                player.x + player.w > boostChair.x && player.x < boostChair.x + boostChair.w &&
-                player.y + player.h > boostChair.y && player.y + player.h < boostChair.y + 30) {
-                player.y = boostChair.y - player.h;
-                player.vy = -23; // Super výskok
-                player.onGround = false;
-            }
+    // Odraz zvrchu (Boost)
+    if (player.vy > 0 && 
+        player.x + player.w > boostChair.x && player.x < boostChair.x + boostChair.w &&
+        player.y + player.h > boostChair.y && player.y + player.h < boostChair.y + 30) {
+        player.y = boostChair.y - player.h;
+        player.vy = -23; // Super výskok
+        player.onGround = false;
+    }
 
-            // --- LIETAJÚCE MODRÉ STOLIČKY ---
-            player.onGround = false; // Reset pred kontrolou platforiem
-            if (player.y + player.h >= 529) player.onGround = true;
+    // --- LIETAJÚCE MODRÉ STOLIČKY ---
+    player.onGround = false; // Reset pred kontrolou platforiem
+    if (player.y + player.h >= 529) player.onGround = true;
 
-            platforms.forEach(p => {
-                // Tu sa deje ten pohyb hore-dole
-                p.currentY = p.baseY + Math.sin(time * p.speed + p.offset) * p.amp;
+    platforms.forEach(p => {
+        // Tu sa deje ten pohyb hore-dole
+        p.currentY = p.baseY + Math.sin(time * p.speed + p.offset) * p.amp;
 
-                // Kolízia (zhora na stoličku)
-                if (player.vy >= 0 &&
-                    player.x + player.w - 10 > p.baseX && player.x + 10 < p.baseX + p.w &&
-                    player.y + player.h > p.currentY && player.y + player.h < p.currentY + 25) {
-                    player.y = p.currentY - player.h;
-                    player.vy = 0;
-                    player.onGround = true;
-                }
-            });
+        // Kolízia (zhora na stoličku)
+        if (player.vy >= 0 && 
+            player.x + player.w - 10 > p.baseX && player.x + 10 < p.baseX + p.w &&
+            player.y + player.h > p.currentY && player.y + player.h < p.currentY + 25) {
+            player.y = p.currentY - player.h;
+            player.vy = 0;
+            player.onGround = true;
+        }
+    });
 
-            // Kamera
-            cameraX = player.x - 400;
-            if (cameraX < 0) cameraX = 0;
-            if (cameraX > 1000) cameraX = 1000;
+    // Kamera
+    cameraX = player.x - 400;
+    if (cameraX < 0) cameraX = 0;
+    if (cameraX > 1000) cameraX = 1000;
 
-            // Hranice sveta
-            if (player.x < 0) player.x = 0;
-            if (player.x > 2000) player.x = 2000;
-            if (boostChair.x < 0) boostChair.x = 0;
+    // Hranice sveta
+    if (player.x < 0) player.x = 0;
+    if (player.x > 2000) player.x = 2000;
+    if (boostChair.x < 0) boostChair.x = 0;
 
-            // Výhra
-            if (player.x + player.w > window.x && player.x < window.x + window.w &&
-                player.y + player.h > window.y && player.y < window.y + window.h) {
-                alert("Level 1 Complete!");
-                reset();
-            }
+    // Výhra
+    if (player.x + player.w > door.x && player.x < door.x + door.w &&
+        player.y + player.h > door.y && player.y < door.y + door.h) {
+        alert("Level 1 Complete!");
+        reset();
+    }
 
             draw();
             requestAnimationFrame(update);
@@ -226,20 +232,25 @@
             ctx.save();
             ctx.translate(-cameraX, 0);
 
-            if (images.bg.complete) ctx.drawImage(images.bg, 0, 0, 2100, 550);
+    // Pozadie
+    if (images.bg.complete) ctx.drawImage(images.bg, 0, 0, 2100, 550);
 
             ctx.drawImage(images.window, window.x, window.y, window.w, window.h);
 
-            platforms.forEach(p => {
-                ctx.drawImage(images.chair, p.baseX, p.currentY, p.w, p.h);
-            });
+    // Bežné lietajúce stoličky
+    platforms.forEach(p => {
+        ctx.drawImage(images.chair, p.baseX, p.currentY, p.w, p.h);
+    });
 
-            ctx.save();
-            ctx.filter = "hue-rotate(160deg) brightness(1.5) drop-shadow(0 0 15px #00ffcc)";
-            ctx.drawImage(images.chair, boostChair.x, boostChair.y, boostChair.w, boostChair.h);
-            ctx.restore();
+    // Boost stolička (má filter, ktorý robí farbu a glow)
+    ctx.save();
+    // Hue-rotate mení farbu, brightness ju rozžiari a drop-shadow robí ten "glow"
+    ctx.filter = "hue-rotate(160deg) brightness(1.5) drop-shadow(0 0 15px #00ffcc)";
+    ctx.drawImage(images.chair, boostChair.x, boostChair.y, boostChair.w, boostChair.h);
+    ctx.restore();
 
-            ctx.drawImage(images.player, player.x, player.y, player.w, player.h);
+    // Hráč
+    ctx.drawImage(images.player, player.x, player.y, player.w, player.h);
 
             ctx.restore();
         }
