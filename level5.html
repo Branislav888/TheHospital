@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Level 6 - Ceiling World Fixed</title>
+    <style>
+        * { user-select: none; box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh;
+            background: #0a0510;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace; overflow: hidden;
+        }
+        .game-container { background: #000; border-radius: 32px; padding: 20px; box-shadow: 0 0 40px #ff0055; }
+        #viewport {
+            width: 1100px; height: 550px; position: relative; border-radius: 20px;
+            box-shadow: 0 0 15px #ff0055; overflow: hidden;
+        }
+        canvas { display: block; background: #000; }
+        .info-panel {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 16px; color: #ff0055; font-size: 14px; letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="viewport">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="info-panel">
+        <div>LEVEL 6: ANTI-GRAVITY ZONE</div>
+        <div>[W] - SKOK NADOL | [A][D] - POHYB | [R] - RESET</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 1100;
+canvas.height = 550;
+
+// --- OBRÁZKY ---
+const images = {};
+const imgSources = {
+    bg: "Images/bbcklvl1.png",
+    door: "Images/door.png",
+    idle: "Images/human4.png",
+    r1: "Images/human1.png", r2: "Images/human5.png", r3: "Images/human3.png",
+    l1: "Images/human2.png", l2: "Images/human6.png", l3: "Images/human7.png"
+};
+
+Object.keys(imgSources).forEach(key => {
+    images[key] = new Image();
+    images[key].src = imgSources[key];
+});
+
+const framesRight = ["r1", "r2", "r3"];
+const framesLeft = ["l1", "l2", "l3"];
+
+// --- HRÁČ A FYZIKA ---
+let player = {
+    x: 100, 
+    y: 0,            // Začína hore
+    w: 65, h: 100,
+    vx: 0, vy: 0, 
+    accel: 0.6,
+    friction: 0.9,
+    jumpPower: 12,   // Sila odrazu od stropu (smerom k zemi)
+    gravity: -0.5,   // Ťahá ho to stále k stropu
+    onGround: false,
+    currentImg: "idle", animTimer: 0, frameIdx: 0
+};
+
+const door = { x: 2000, y: 0, w: 100, h: 150 };
+let cameraX = 0;
+let keys = {};
+
+function resetPlayer() {
+    player.x = 100; player.y = 0;
+    player.vx = 0; player.vy = 0;
+}
+
+document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    if(e.key.toLowerCase() === 'r') resetPlayer();
+});
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+function update() {
+    // --- OVLÁDANIE ---
+    if (keys["a"]) player.vx -= player.accel;
+    else if (keys["d"]) player.vx += player.accel;
+    
+    player.vx *= player.friction;
+    player.x += player.vx;
+
+    // Skok (odraz od stropu nadol)
+    if (keys["w"] && player.onGround) {
+        player.vy = player.jumpPower;
+        player.onGround = false;
+    }
+
+    player.vy += player.gravity;
+    player.y += player.vy;
+
+    // Kolízia so stropom (naša nová podlaha)
+    if (player.y <= 0) {
+        player.y = 0;
+        player.vy = 0;
+        player.onGround = true;
+    } else {
+        player.onGround = false;
+    }
+
+    if (player.y > canvas.height) resetPlayer();
+
+    // --- OPRAVENÉ ANIMÁCIE PRE OTOČENÉHO PANÁČIKA ---
+    if (Math.abs(player.vx) > 0.1) {
+        player.animTimer++;
+        if (player.animTimer > 8) {
+            player.frameIdx = (player.frameIdx + 1) % 3;
+            // Keďže je postava otočená o 180°, vizuálne prehadzujeme smery:
+            // Pohyb DOPRAVA (vx > 0) teraz používa sadu L, aby sa pozeral správne.
+            player.currentImg = player.vx > 0 ? framesLeft[player.frameIdx] : framesRight[player.frameIdx];
+            player.animTimer = 0;
+        }
+    } else {
+        player.currentImg = "idle";
+    }
+
+    // Kamera
+    cameraX += (player.x - 450 - cameraX) * 0.08;
+    if (cameraX < 0) cameraX = 0;
+
+    // Výhra
+    if (player.x + player.w > door.x && player.x < door.x + door.w && player.y < door.y + door.h) {
+        alert("Level 6 Complete!");
+        resetPlayer();
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    // Pozadie
+    if (images.bg.complete) {
+        ctx.globalAlpha = 0.2;
+        ctx.drawImage(images.bg, 0, 0, 2500, 550);
+        ctx.globalAlpha = 1.0;
+    }
+
+    // Dvere
+    ctx.drawImage(images.door, door.x, door.y, door.w, door.h);
+
+    // --- VYKRESLENIE OTOČENÉHO HRÁČA ---
+    let img = images[player.currentImg];
+    if (img && img.complete) {
+        ctx.save();
+        ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+        ctx.rotate(Math.PI); // Otočenie o 180 stupňov
+        ctx.drawImage(img, -player.w / 2, -player.h / 2, player.w, player.h);
+        ctx.restore();
+    }
+
+    ctx.restore();
+
+    // Atmosféra
+    ctx.fillStyle = "rgba(255, 0, 85, 0.02)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+window.onload = update;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Level 4 - Horror Vision</title>
+    <style>
+        * { user-select: none; box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: #000;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace; overflow: hidden;
+        }
+        .game-container { background: #111; border-radius: 32px; padding: 20px; box-shadow: 0 0 50px rgba(0,0,0,1); }
+        #viewport {
+            width: 1100px; height: 550px; position: relative; border-radius: 20px;
+            box-shadow: 0 0 20px #222; overflow: hidden;
+        }
+        canvas { display: block; background: #000; }
+        .info-panel {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 16px; background: #1a1a1a; padding: 12px 25px;
+            border-radius: 60px; color: #555; border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="viewport">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="info-panel">
+        <div id="status">BATERKA: SLABÁ...</div>
+        <div>STLAČ [R] PRE REŠTART</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 1100;
+canvas.height = 550;
+
+const images = {};
+const imgSources = {
+    bg: "Images/bbcklvl1.png",
+    door: "Images/door.png",
+    idle: "Images/human4.png",
+    r1: "Images/human1.png", r2: "Images/human5.png", r3: "Images/human3.png",
+    l1: "Images/human2.png", l2: "Images/human6.png", l3: "Images/human7.png"
+};
+
+Object.keys(imgSources).forEach(key => {
+    images[key] = new Image();
+    images[key].src = imgSources[key];
+});
+
+const framesRight = ["r1", "r2", "r3"];
+const framesLeft = ["l1", "l2", "l3"];
+
+let player = {
+    x: 100, y: 430, w: 65, h: 100,
+    vx: 0, vy: 0, speed: 5, jumpPower: -15, gravity: 0.7, onGround: false,
+    currentImg: "idle", animTimer: 0, frameIdx: 0,
+    visionRadius: 160 
+};
+
+const door = { x: 2800, y: 350, w: 100, h: 180 };
+let cameraX = 0;
+let keys = {};
+let time = 0;
+
+document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    if(e.key.toLowerCase() === 'r') player.x = 100;
+});
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+function update() {
+    time++;
+
+    if (keys["a"]) player.vx = -player.speed;
+    else if (keys["d"]) player.vx = player.speed;
+    else player.vx = 0;
+
+    if (keys["w"] && player.onGround) { player.vy = player.jumpPower; player.onGround = false; }
+    player.vy += player.gravity;
+    player.x += player.vx; player.y += player.vy;
+
+    if (player.y + player.h > 530) { player.y = 530 - player.h; player.vy = 0; player.onGround = true; }
+
+    if (!player.onGround) player.currentImg = player.vx >= 0 ? "r1" : "l2";
+    else if (player.vx !== 0) {
+        player.animTimer++;
+        if (player.animTimer > 8) {
+            player.frameIdx = (player.frameIdx + 1) % 3;
+            player.currentImg = player.vx > 0 ? framesRight[player.frameIdx] : framesLeft[player.frameIdx];
+            player.animTimer = 0;
+        }
+    } else player.currentImg = "idle";
+
+    cameraX = player.x - 500;
+    if (cameraX < 0) cameraX = 0;
+    if (cameraX > 2000) cameraX = 2000;
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+    if (images.bg.complete) ctx.drawImage(images.bg, 0, 0, 3100, 550);
+    ctx.drawImage(images.door, door.x, door.y, door.w, door.h);
+    let imgKey = player.currentImg;
+    if (images[imgKey]) ctx.drawImage(images[imgKey], player.x, player.y, player.w, player.h);
+    ctx.restore();
+
+ 
+    ctx.save();
+    
+    let flicker = Math.sin(time * 0.2) * 3 + (Math.random() * 2);
+    let radius = player.visionRadius + flicker;
+
+    let screenX = player.x + player.w / 2 - cameraX;
+    let screenY = player.y + player.h / 2;
+
+    ctx.globalCompositeOperation = 'multiply'; 
+    
+    let grad = ctx.createRadialGradient(screenX, screenY, radius * 0.2, screenX, screenY, radius);
+    grad.addColorStop(0, 'rgba(255, 255, 200, 0.1)'); 
+    grad.addColorStop(0.4, 'rgba(0, 0, 0, 0)'); 
+    grad.addColorStop(1, 'rgba(0, 0, 0, 1)');  
+
+    ctx.fillStyle = grad;
+    
+    
+    ctx.globalCompositeOperation = 'source-over';
+    
+    ctx.beginPath();
+    ctx.rect(0, 0, canvas.width, canvas.height); 
+    ctx.arc(screenX, screenY, radius, 0, Math.PI * 2, true); 
+    ctx.fillStyle = "black";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.restore();
+}
+
+window.onload = update;
+</script>
+
+</body>
+</html>

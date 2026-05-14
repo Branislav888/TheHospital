@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Level 5 - Smooth Moon Gravity</title>
+    <style>
+        * { user-select: none; box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh;
+            background: #020205;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace; overflow: hidden;
+        }
+        .game-container { background: #000; border-radius: 32px; padding: 20px; box-shadow: 0 0 40px #0055ff; }
+        #viewport {
+            width: 1100px; height: 550px; position: relative; border-radius: 20px;
+            box-shadow: 0 0 15px #0055ff; overflow: hidden;
+        }
+        canvas { display: block; background: #000; }
+        .info-panel {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 16px; color: #0088ff; font-size: 14px; letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="viewport">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="info-panel">
+        <div>SUPER SMOOTH MOON GRAVITY ACTIVE</div>
+        <div>[W][A][D] - MOVE | [R] - RESET</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 1100;
+canvas.height = 550;
+
+// --- OBRÁZKY ---
+const images = {};
+const imgSources = {
+    bg: "Images/bbcklvl1.png",
+    door: "Images/door.png",
+    idle: "Images/human4.png",
+    r1: "Images/human1.png", r2: "Images/human5.png", r3: "Images/human3.png",
+    l1: "Images/human2.png", l2: "Images/human6.png", l3: "Images/human7.png"
+};
+
+Object.keys(imgSources).forEach(key => {
+    images[key] = new Image();
+    images[key].src = imgSources[key];
+});
+
+const framesRight = ["r1", "r2", "r3"];
+const framesLeft = ["l1", "l2", "l3"];
+
+// --- FYZIKA A HRÁČ ---
+let player = {
+    x: 100, y: 400, w: 65, h: 100,
+    vx: 0, vy: 0, 
+    accel: 0.4,     // Zzrýchlenie (ako rýchlo sa rozbehne)
+    friction: 0.94, // Trenie (ako hladko dokĺže)
+    jumpPower: -8,  // Sila skoku (pri nízkej gravitácii stačí málo)
+    gravity: 0.08,  // EXTRA NÍZKA GRAVITÁCIA (veľmi pomalý pád)
+    onGround: false,
+    currentImg: "idle", animTimer: 0, frameIdx: 0
+};
+
+const platforms = [
+    { x: 300, y: 380, w: 150, h: 15 },
+    { x: 500, y: 250, w: 150, h: 15 },
+    { x: 800, y: 350, w: 150, h: 15 },
+    { x: 1100, y: 200, w: 150, h: 15 },
+    { x: 1400, y: 400, w: 150, h: 15 },
+    { x: 1750, y: 250, w: 150, h: 15 }
+];
+
+const door = { x: 2000, y: 150, w: 100, h: 160 };
+let cameraX = 0;
+let keys = {};
+let time = 0;
+
+document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    if(e.key.toLowerCase() === 'r') player.x = 100;
+});
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+function update() {
+    time++;
+
+    // SMOOTH HORIZONTÁLNY POHYB (Zotrvačnosť)
+    if (keys["a"]) player.vx -= player.accel;
+    else if (keys["d"]) player.vx += player.accel;
+    
+    player.vx *= player.friction; // Aplikácia kĺzania
+    player.x += player.vx;
+
+    // SKOK
+    if (keys["w"] && player.onGround) {
+        player.vy = player.jumpPower;
+        player.onGround = false;
+    }
+
+    // EXTRA POMALÁ GRAVITÁCIA
+    player.vy += player.gravity;
+    player.y += player.vy;
+
+    // PODLAHA
+    if (player.y + player.h > 530) {
+        player.y = 530 - player.h;
+        player.vy = 0;
+        player.onGround = true;
+    }
+
+    // KOLÍZIE S PLATFORMAMI
+    platforms.forEach(p => {
+        if (player.vy > 0 && 
+            player.x + player.w - 15 > p.x && player.x + 15 < p.x + p.w &&
+            player.y + player.h > p.y && player.y + player.h < p.y + 15) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+        }
+    });
+
+    // ANIMÁCIE (Pomalšie prepínanie pre smooth efekt)
+    if (!player.onGround) {
+        player.currentImg = player.vx >= 0 ? "r1" : "l2";
+    } else if (Math.abs(player.vx) > 0.1) {
+        player.animTimer++;
+        if (player.animTimer > 12) {
+            player.frameIdx = (player.frameIdx + 1) % 3;
+            player.currentImg = player.vx > 0 ? framesRight[player.frameIdx] : framesLeft[player.frameIdx];
+            player.animTimer = 0;
+        }
+    } else player.currentImg = "idle";
+
+    // KAMERA
+    cameraX += (player.x - 450 - cameraX) * 0.05; // Smooth sledovanie kamery
+    if (cameraX < 0) cameraX = 0;
+    if (cameraX > 1100) cameraX = 1100;
+
+    // VÝHRA
+    if (player.x + player.w > door.x && player.x < door.x + door.w &&
+        player.y + player.h > door.y && player.y < door.y + door.h) {
+        alert("Level 5 Complete! Plynulý ako vánok.");
+        player.x = 100;
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    // POZADIE
+    if (images.bg.complete) {
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(images.bg, 0, 0, 2200, 550);
+        ctx.globalAlpha = 1.0;
+    }
+
+    // DVERE
+    ctx.drawImage(images.door, door.x, door.y, door.w, door.h);
+
+    // PLATFORMY (S jemným žiarením)
+    ctx.fillStyle = "#0088ff";
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#0055ff";
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+    });
+    ctx.shadowBlur = 0;
+
+    // HRÁČ
+    let img = images[player.currentImg];
+    if (img && img.complete) {
+        ctx.drawImage(img, player.x, player.y, player.w, player.h);
+    }
+
+    ctx.restore();
+
+    // FILTROVÝ EFEKT (Modrastý opar)
+    ctx.fillStyle = "rgba(0, 80, 255, 0.03)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+window.onload = update;
+</script>
+
+</body>
+</html>
