@@ -3,7 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <title>The Hospital - Level 1</title>
-<link rel="stylesheet" href="level1.css">
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background-image: url("Images/bbcklvl1.png");
+    background-size: cover;
+}
+
+/* WORLD CONTAINER */
+#game {
+    position: absolute;
+    width: 2000px;
+    height: 800px;
+
+    transform-origin: top left;
+}
+
+#player {
+    position: absolute;
+    width: 70px;
+}
+
+.chair {
+    position: absolute;
+    width: 80px;
+}
+
+#door {
+    position: absolute;
+    width: 150px;
+}
+
+#chairBoost {
+    position: absolute;
+    width: 80px;
+    filter: hue-rotate(180deg) brightness(1.3);
+}
+</style>
 </head>
 
 <body>
@@ -18,18 +56,37 @@
     <img class="chair" src="Images/chair.png">
 
     <img id="chairBoost" src="Images/chair.png">
-
     <img id="door" src="Images/door.png">
 </div>
 
-
-
 <script>
+const game = document.getElementById("game");
+
 const player = document.getElementById("player");
 const chairs = document.querySelectorAll(".chair");
 const chairBoost = document.getElementById("chairBoost");
 const door = document.getElementById("door");
 
+const WORLD_W = 2000;
+const WORLD_H = 800;
+
+// ================= CAMERA SCALE =================
+function resize() {
+    const scale = Math.min(
+        window.innerWidth / WORLD_W,
+        window.innerHeight / WORLD_H
+    );
+
+    game.style.transform = `
+        translate(${(window.innerWidth - WORLD_W * scale) / 2}px,
+                  ${(window.innerHeight - WORLD_H * scale) / 2}px)
+        scale(${scale})
+    `;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ================= GAME =================
 const framesRight = [
     "Images/human1.png",
     "Images/human5.png",
@@ -67,7 +124,7 @@ const PH = 100;
 const platforms = [
     { baseX: 300, baseY: 450, amp: 60, speed: 0.02 },
     { baseX: 600, baseY: 400, amp: 80, speed: 0.03 },
-    { baseX: 900, baseY: 450, amp: 140, speed: 0.025 },
+    { baseX: 900, baseY: 450, amp: 50, speed: 0.025 },
     { baseX: 1200, baseY: 400, amp: 70, speed: 0.02 },
     { baseX: 1500, baseY: 350, amp: 90, speed: 0.015 }
 ];
@@ -87,8 +144,13 @@ let time = 0;
 function update() {
     time++;
 
+    // ================= MOVE =================
     if (keys["a"]) x -= moveSpeed;
     if (keys["d"]) x += moveSpeed;
+
+    // ❗ CLAMP - NESMIE ÍSŤ MIMO MAPY
+    if (x < 0) x = 0;
+    if (x > WORLD_W - PW) x = WORLD_W - PW;
 
     if (keys["w"] && onGround) {
         vy = jumpPower;
@@ -111,6 +173,7 @@ function update() {
 
     let groundedThisFrame = false;
 
+    // ================= CHAIRS =================
     chairs.forEach((chair, i) => {
         const p = platforms[i];
 
@@ -139,6 +202,7 @@ function update() {
         }
     });
 
+    // ================= BOOST =================
     const bLeft = boostPlatform.baseX;
     const bRight = bLeft + 80;
     const bTop = boostPlatform.baseY + 100;
@@ -157,28 +221,9 @@ function update() {
 
     boostPlatform.baseX += boostPlatform.vx;
 
-    if (touch) {
-        if (x < bLeft) x = bLeft - PW;
-        else if (x > bRight - PW) x = bRight;
-    }
-
-    chairBoost.style.left = boostPlatform.baseX + "px";
-    chairBoost.style.bottom = boostPlatform.baseY + "px";
-
-    const landingBoost =
-        vy <= 0 &&
-        overlapX &&
-        pBottom <= bTop &&
-        pBottom - vy >= bTop;
-
-    if (landingBoost) {
-        y = bTop;
-        vy = boostPower;
-        onGround = false;
-    }
-
     if (groundedThisFrame) onGround = true;
 
+    // ================= DOOR =================
     const dx = 20;
     const dy = 600;
 
@@ -196,6 +241,7 @@ function update() {
         y = 0;
     }
 
+    // ================= ANIMATION =================
     if (keys["a"] && keys["w"]) anim("Images/human6.png");
     else if (keys["d"] && keys["w"]) anim("Images/human1.png");
     else if (keys["w"]) anim("Images/human4.png");
@@ -226,37 +272,3 @@ update();
 
 </body>
 </html>
-<style>
-    body {
-    margin: 0;
-    overflow: hidden;
-    background-image: url("Images/bbcklvl1.png");
-    background-size: cover;
-}
-
-#game {
-    position: relative;
-    width: 2000px;
-    height: 100vh;
-}
-
-#player {
-    position: absolute;
-    width: 70px;
-}
-
-.chair {
-    position: absolute;
-    width: 80px;
-}
-
-#door {
-    position: absolute;
-    width: 150px;
-}
-#chairBoost {
-    position: absolute;
-    width: 80px;
-    filter: hue-rotate(180deg) brightness(1.3);
-}
-</style>

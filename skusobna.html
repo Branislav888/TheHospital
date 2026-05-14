@@ -28,7 +28,6 @@ const chairs = document.querySelectorAll(".chair");
 const chairBoost = document.getElementById("chairBoost");
 const door = document.getElementById("door");
 
-// ===== ANIMÁCIE =====
 const framesRight = [
     "Images/human1.png",
     "Images/human5.png",
@@ -51,7 +50,8 @@ let vy = 0;
 
 const gravity = 0.5;
 const jumpPower = 15;
-const boostPower = 20;
+const boostPower = 18;
+const moveSpeed = 6;
 
 let onGround = false;
 let keys = {};
@@ -59,24 +59,21 @@ let keys = {};
 document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-// ===== SIZE =====
 const PW = 60;
 const PH = 100;
 
-// ===== PLATFORMS =====
 const platforms = [
-    { baseX: 300, baseY: 400, amp: 60, speed: 0.02 },
-    { baseX: 600, baseY: 350, amp: 80, speed: 0.03 },
-    { baseX: 900, baseY: 350, amp: 50, speed: 0.025 },
-    { baseX: 1200, baseY: 350, amp: 70, speed: 0.02 },
+    { baseX: 300, baseY: 450, amp: 60, speed: 0.02 },
+    { baseX: 600, baseY: 400, amp: 80, speed: 0.03 },
+    { baseX: 900, baseY: 450, amp: 50, speed: 0.025 },
+    { baseX: 1200, baseY: 400, amp: 70, speed: 0.02 },
     { baseX: 1500, baseY: 350, amp: 90, speed: 0.015 }
 ];
 
 const boostPlatform = {
-    baseX: 1750,
+    baseX: 850,
     baseY: 0,
-    amp: 0,
-    speed: 0
+    vx: 0
 };
 
 function anim(src) {
@@ -88,8 +85,8 @@ let time = 0;
 function update() {
     time++;
 
-    if (keys["a"]) x -= 5;
-    if (keys["d"]) x += 5;
+    if (keys["a"]) x -= moveSpeed;
+    if (keys["d"]) x += moveSpeed;
 
     if (keys["w"] && onGround) {
         vy = jumpPower;
@@ -112,9 +109,7 @@ function update() {
 
     let groundedThisFrame = false;
 
-
     chairs.forEach((chair, i) => {
-
         const p = platforms[i];
 
         const cx = p.baseX;
@@ -142,37 +137,48 @@ function update() {
         }
     });
 
+    const bLeft = boostPlatform.baseX;
+    const bRight = bLeft + 80;
+    const bTop = boostPlatform.baseY + 100;
 
-    const bx = boostPlatform.baseX;
-    const by = boostPlatform.baseY;
+    const overlapX = pRight > bLeft && pLeft < bRight;
+    const overlapY = pBottom < bTop && pTop > boostPlatform.baseY;
+    const touch = overlapX && overlapY;
 
-    chairBoost.style.left = bx + "px";
-    chairBoost.style.bottom = by + "px";
+    if (touch) {
+        if (keys["a"]) boostPlatform.vx = -3;
+        else if (keys["d"]) boostPlatform.vx = 3;
+        else boostPlatform.vx *= 0.8;
+    } else {
+        boostPlatform.vx *= 0.95;
+    }
 
-    const bLeft = bx;
-    const bRight = bx + 80;
-    const bTop = by + 100;
+    boostPlatform.baseX += boostPlatform.vx;
 
-    const overlapBoost = pRight > bLeft && pLeft < bRight;
+    if (touch) {
+        if (x < bLeft) x = bLeft - PW;
+        else if (x > bRight - PW) x = bRight;
+    }
+
+    chairBoost.style.left = boostPlatform.baseX + "px";
+    chairBoost.style.bottom = boostPlatform.baseY + "px";
 
     const landingBoost =
         vy <= 0 &&
-        overlapBoost &&
+        overlapX &&
         pBottom <= bTop &&
         pBottom - vy >= bTop;
 
     if (landingBoost) {
         y = bTop;
-        vy = boostPower;  
+        vy = boostPower;
         onGround = false;
-        groundedThisFrame = false;
     }
 
     if (groundedThisFrame) onGround = true;
 
-
-    const dx = 50;
-    const dy = 450;
+    const dx = 20;
+    const dy = 600;
 
     door.style.left = dx + "px";
     door.style.bottom = dy + "px";
@@ -187,7 +193,6 @@ function update() {
         x = 100;
         y = 0;
     }
-
 
     if (keys["a"] && keys["w"]) anim("Images/human6.png");
     else if (keys["d"] && keys["w"]) anim("Images/human1.png");
@@ -215,18 +220,20 @@ function update() {
 }
 
 update();
-
-
 </script>
 
 </body>
 </html>
 <style>
-    body {
+body {
     margin: 0;
     overflow: hidden;
     background-image: url("Images/bbcklvl1.png");
     background-size: cover;
+}
+
+canvas {
+    display: block;
 }
 
 #game {
@@ -247,7 +254,7 @@ update();
 
 #door {
     position: absolute;
-    width: 90px;
+    width: 150px;
 }
 #chairBoost {
     position: absolute;
