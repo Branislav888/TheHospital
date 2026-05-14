@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Level 2</title>
+    <title>Level 2 - Stredne veľký panáčik (pomalšie ihly)</title>
 
     <style>
         * {
@@ -16,7 +16,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: linear-gradient(145deg, black 0%, black 100%);
+            background: linear-gradient(145deg, #0a0a0a 0%, #000000 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -38,6 +38,7 @@
             border-radius: 20px;
             box-shadow: 0 0 0 5px #ff007f, 0 12px 28px black;
             overflow: hidden;
+            background-color: #000;
         }
 
         #game-world {
@@ -54,29 +55,39 @@
 
         #player {
             position: absolute;
-            width: 70px;
+            width: 105px;
+            height: 140px;
+            object-fit: contain;
             z-index: 10;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
         }
 
         .needle {
             position: absolute;
-            width: 18px;
-            height: 50px;
+            width: 64px;
+            height: 48px;
             z-index: 8;
+            pointer-events: none;
+            filter: drop-shadow(0 0 4px #ff0000);
         }
 
         .needle img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            transform: rotate(90deg);
+            display: block;
         }
 
         #door {
             position: absolute;
-            width: 100px;
-            height: 220px;
+            width: auto;
+            height: 228px;
             z-index: 2;
-            filter: drop-shadow(0 0 10px #ff007f);
+            margin-left: -85px;
+            margin-bottom: -6px;
+            filter: drop-shadow(0 0 10px #272eff);
         }
 
         .image-zone {
@@ -103,6 +114,8 @@
             border-radius: 60px;
             color: #ff007f;
             border: 1px solid #ff007f;
+            font-weight: bold;
+            gap: 20px;
         }
 
         button {
@@ -113,12 +126,14 @@
             padding: 10px 20px;
             border-radius: 60px;
             cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: 0.2s;
         }
-        .needle img {
-            width: 70px;
-            height: auto;
-            object-fit: contain;
-            transform: rotate(90deg);
+
+        button:hover {
+            background: #ff44a0;
+            transform: scale(0.97);
+            box-shadow: 0 0 12px #ff007f;
         }
     </style>
 </head>
@@ -126,26 +141,21 @@
 <body>
 
 <div class="game-container">
-
     <div id="viewport">
         <div id="game-world">
-
-            <img id="player" src="Images/human4.png">
-
+            <img id="player" src="Images/human4.png" alt="player">
+            
             <div class="image-zone" style="left: 1000px; bottom: 0; width: 600px; height: 120px;">
-                <img src="Images/zone1.png">
+                <img src="Images/zone1.png" alt="zone">
             </div>
-
             <div class="image-zone" style="left: 2200px; bottom: 0; width: 800px; height: 120px;">
-                <img src="Images/zone1.png">
+                <img src="Images/zone1.png" alt="zone">
             </div>
-
             <div class="image-zone" style="left: 3800px; bottom: 0; width: 600px; height: 120px;">
-                <img src="Images/zone1.png">
+                <img src="Images/zone1.png" alt="zone">
             </div>
-
-            <img id="door" src="Images/door.png" style="left: 4575px; bottom: 130px; height: 225px; width: 98px;">
-
+            
+            <img id="door" src="Images/door.png" style="left: 4575px; bottom: 130px;" alt="door">
         </div>
     </div>
 
@@ -153,186 +163,302 @@
         <button id="stopBtn">STOP (SPACE)</button>
         <button id="resetBtn">REŠTART (R)</button>
     </div>
-
 </div>
 
 <script>
-const world = document.getElementById("game-world");
-const player = document.getElementById("player");
-const door = document.getElementById("door");
-const resetBtn = document.getElementById("resetBtn");
-const stopBtn = document.getElementById("stopBtn");
+    (function() {
+        const world = document.getElementById("game-world");
+        const player = document.getElementById("player");
+        const door = document.getElementById("door");
+        const resetBtn = document.getElementById("resetBtn");
+        const stopBtn = document.getElementById("stopBtn");
 
-let paused = false;
-
-const framesRight = ["Images/human1.png", "Images/human5.png", "Images/human3.png"];
-const framesLeft = ["Images/human2.png", "Images/human6.png", "Images/human7.png"];
-
-let x = 100, y = 0, vy = 0;
-let frameIndex = 0, animCooldown = 0;
-let keys = {};
-let onGround = true;
-let needles = [];
-
-const GROUND_OFFSET = 35;
-
-document.addEventListener("keydown", e => {
-    keys[e.key.toLowerCase()] = true;
-
-    if (e.code === "Space") {
-        paused = !paused;
-    }
-
-    if (e.key.toLowerCase() === 'r') reset();
-});
-
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-stopBtn.onclick = () => paused = !paused;
-resetBtn.onclick = reset;
-
-function reset() {
-    x = 100;
-    y = 0;
-    vy = 0;
-
-    needles.forEach(n => n.el.remove());
-    needles = [];
-
-    world.style.transform = `translateX(0px)`;
-}
-
-function createNeedle() {
-    const el = document.createElement("div");
-    el.className = "needle";
-
-    const img = document.createElement("img");
-    img.src = "Images/needle.png";
-
-    el.appendChild(img);
-
-    const spawnX = Math.random() * 4950;
-    el.style.left = spawnX + "px";
-    el.style.top = "-60px";
-
-    world.appendChild(el);
-
-    needles.push({
-        el,
-        x: spawnX,
-        y: -60,
-        speed: 2 + Math.random() * 10
-    });
-}
-
-function update() {
-
-    if (paused) {
-        requestAnimationFrame(update);
-        return;
-    }
-
-    let speedMult = 1;
-
-    document.querySelectorAll(".image-zone").forEach(z => {
-        const zx = parseInt(z.style.left);
-        const zw = parseInt(z.style.width);
-
-        if (x + 35 > zx && x < zx + zw && y < 120) {
-            speedMult = 0.4;
+        let paused = false;
+        let x = 100;
+        let y = 0;
+        let vy = 0;
+        let onGround = true;
+        
+        let frameIndex = 0;
+        let animCooldown = 0;
+        let keys = {};
+        let needles = [];
+        
+        const PLAYER_VISUAL_W = 105;
+        const PLAYER_VISUAL_H = 140;
+        const GROUND_Y_OFFSET = 38;
+        
+        const PLAYER_HITBOX_W = 72;
+        const PLAYER_HITBOX_H = 100;
+        const PLAYER_HITBOX_OFFSET_X = 16;
+        const PLAYER_HITBOX_OFFSET_Y = 24;
+        
+        const NEEDLE_VISUAL_W = 64;
+        const NEEDLE_VISUAL_H = 48;
+        const NEEDLE_HITBOX_W = 20;
+        const NEEDLE_HITBOX_H = 20;
+        const NEEDLE_HITBOX_OFFSET_X = 22;
+        const NEEDLE_HITBOX_OFFSET_Y = 14;
+        
+        const WORLD_WIDTH = 5000;
+        const MAX_X = WORLD_WIDTH - PLAYER_VISUAL_W;
+        const MIN_X = 0;
+        
+        let DOOR_X = 4575;
+        const DOOR_WIDTH = 100;
+        const DOOR_HEIGHT = 225;
+        
+        function updateDoorBounds() {
+            const doorLeft = parseInt(door.style.left);
+            if (!isNaN(doorLeft)) DOOR_X = doorLeft;
         }
-    });
-
-    if (keys["a"]) x -= 7 * speedMult;
-    if (keys["d"]) x += 7 * speedMult;
-
-    if (keys["w"] && onGround) {
-        vy = 15;
-        onGround = false;
-    }
-
-    vy -= 0.8;
-    y += vy;
-
-    if (y <= GROUND_OFFSET) {
-        y = GROUND_OFFSET;
-        vy = 0;
-        onGround = true;
-    }
-
-    if (x < 0) x = 0;
-    if (x > 4930) x = 4930;
-
-    if (Math.random() < 0.15) createNeedle();
-
-    needles.forEach((n, i) => {
-        n.y += n.speed;
-        n.el.style.top = n.y + "px";
-
-        const pRect = {
-            l: x,
-            r: x + 60,
-            t: 550 - y - 100 + GROUND_OFFSET,
-            b: 550 - y + GROUND_OFFSET
+        updateDoorBounds();
+        
+        const framesRight = ["Images/human1.png", "Images/human5.png", "Images/human3.png"];
+        const framesLeft  = ["Images/human2.png", "Images/human6.png", "Images/human7.png"];
+        
+        function resetGame() {
+            x = 100;
+            y = 0;
+            vy = 0;
+            onGround = true;
+            for (let needle of needles) {
+                if (needle.el && needle.el.remove) needle.el.remove();
+            }
+            needles = [];
+            let scrollX = x - 500;
+            if (scrollX < 0) scrollX = 0;
+            if (scrollX > WORLD_WIDTH - 1100) scrollX = WORLD_WIDTH - 1100;
+            world.style.transform = `translateX(${-scrollX}px)`;
+            player.src = "Images/human4.png";
+            player.style.left = x + "px";
+            player.style.bottom = y + "px";
+            if (resetBtn) {
+                resetBtn.style.transform = "scale(0.95)";
+                setTimeout(() => { if(resetBtn) resetBtn.style.transform = ""; }, 150);
+            }
+        }
+        
+        function createNeedle() {
+            const el = document.createElement("div");
+            el.className = "needle";
+            const img = document.createElement("img");
+            img.src = "Images/needle.png";
+            img.draggable = false;
+            el.appendChild(img);
+            
+            const spawnX = Math.random() * (WORLD_WIDTH - NEEDLE_VISUAL_W);
+            const startY = -NEEDLE_VISUAL_H - Math.random() * 40;
+            el.style.left = spawnX + "px";
+            el.style.top = startY + "px";
+            world.appendChild(el);
+            
+            needles.push({
+                el: el,
+                x: spawnX,
+                y: startY,
+                speed: 4.0 + Math.random() * 5
+            });
+        }
+        
+        function checkCollision(rect1, rect2) {
+            return (rect1.left < rect2.right &&
+                    rect1.right > rect2.left &&
+                    rect1.top < rect2.bottom &&
+                    rect1.bottom > rect2.top);
+        }
+        
+        function updateGame() {
+            if (paused) {
+                requestAnimationFrame(updateGame);
+                return;
+            }
+            
+            let speedMult = 1.0;
+            const playerCenterX = x + PLAYER_VISUAL_W / 2;
+            document.querySelectorAll(".image-zone").forEach(zone => {
+                const zoneLeft = parseInt(zone.style.left);
+                const zoneWidth = parseInt(zone.style.width);
+                if (playerCenterX > zoneLeft && playerCenterX < zoneLeft + zoneWidth && y < 120) {
+                    speedMult = 0.4;
+                }
+            });
+            
+            let move = 0;
+            if (keys["a"]) move = -1;
+            if (keys["d"]) move = 1;
+            if (move !== 0) {
+                x += move * 7 * speedMult;
+            }
+            if (x < MIN_X) x = MIN_X;
+            if (x > MAX_X) x = MAX_X;
+            
+            if (keys["w"] && onGround) {
+                vy = 15.0;
+                onGround = false;
+            }
+            vy -= 0.88;
+            y += vy;
+            if (y <= GROUND_Y_OFFSET) {
+                y = GROUND_Y_OFFSET;
+                vy = 0;
+                onGround = true;
+            } else {
+                onGround = false;
+            }
+            
+            if (Math.random() < 0.15 && needles.length < 50) {
+                createNeedle();
+            }
+            
+            const viewportHeight = 550;
+            
+            const playerHitboxLeft = x + PLAYER_HITBOX_OFFSET_X;
+            const playerHitboxRight = playerHitboxLeft + PLAYER_HITBOX_W;
+            const playerHitboxBottomWorld = viewportHeight - (y + PLAYER_HITBOX_OFFSET_Y);
+            const playerHitboxTopWorld = playerHitboxBottomWorld - PLAYER_HITBOX_H;
+            
+            const playerCollision = {
+                left: playerHitboxLeft,
+                right: playerHitboxRight,
+                top: playerHitboxTopWorld,
+                bottom: playerHitboxBottomWorld
+            };
+            
+            for (let i = 0; i < needles.length; i++) {
+                const n = needles[i];
+                n.y += n.speed;
+                n.el.style.top = n.y + "px";
+                
+                const needleHitboxLeft = n.x + NEEDLE_HITBOX_OFFSET_X;
+                const needleHitboxRight = needleHitboxLeft + NEEDLE_HITBOX_W;
+                const needleHitboxTop = n.y + NEEDLE_HITBOX_OFFSET_Y;
+                const needleHitboxBottom = needleHitboxTop + NEEDLE_HITBOX_H;
+                
+                const needleRect = {
+                    left: needleHitboxLeft,
+                    right: needleHitboxRight,
+                    top: needleHitboxTop,
+                    bottom: needleHitboxBottom
+                };
+                
+                if (checkCollision(playerCollision, needleRect)) {
+                    resetGame();
+                    requestAnimationFrame(updateGame);
+                    return;
+                }
+                
+                if (n.y > viewportHeight + 200) {
+                    if (n.el && n.el.remove) n.el.remove();
+                    needles.splice(i, 1);
+                    i--;
+                }
+            }
+            
+            updateDoorBounds();
+            const doorBottomY = 130;
+            const doorTopY = doorBottomY + DOOR_HEIGHT;
+            const doorTopWorld = viewportHeight - doorTopY;
+            const doorBottomWorld = viewportHeight - doorBottomY;
+            const doorRect = {
+                left: DOOR_X,
+                right: DOOR_X + DOOR_WIDTH,
+                top: doorTopWorld,
+                bottom: doorBottomWorld
+            };
+            if (checkCollision(playerCollision, doorRect)) {
+                window.location.href = "foto_level2.html";
+                return;
+            }
+            
+            if (keys["a"] || keys["d"]) {
+                if (animCooldown <= 0) {
+                    const frames = keys["a"] ? framesLeft : framesRight;
+                    if (frames && frames[frameIndex]) player.src = frames[frameIndex];
+                    frameIndex = (frameIndex + 1) % 3;
+                    animCooldown = 6;
+                } else {
+                    animCooldown--;
+                }
+            } else {
+                player.src = "Images/human4.png";
+                animCooldown = 0;
+                frameIndex = 0;
+            }
+            
+            player.style.left = x + "px";
+            player.style.bottom = y + "px";
+            
+            let targetScroll = x - 500;
+            if (targetScroll < 0) targetScroll = 0;
+            const maxScroll = WORLD_WIDTH - 1100;
+            if (targetScroll > maxScroll) targetScroll = maxScroll;
+            world.style.transform = `translateX(${-targetScroll}px)`;
+            
+            requestAnimationFrame(updateGame);
+        }
+        
+        function handleKeyDown(e) {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+            if (e.code === "Space") {
+                e.preventDefault();
+                paused = !paused;
+                if (stopBtn) stopBtn.style.background = paused ? "#aa0055" : "#ff007f";
+                return;
+            }
+            if (key === 'r') {
+                e.preventDefault();
+                resetGame();
+                if (paused) { paused = false; if(stopBtn) stopBtn.style.background = "#ff007f"; }
+                return;
+            }
+            if (key === 'w' || key === 'a' || key === 's' || key === 'd' || e.code === "Space") {
+                e.preventDefault();
+            }
+        }
+        
+        function handleKeyUp(e) {
+            const key = e.key.toLowerCase();
+            keys[key] = false;
+            if (key === 'a' || key === 'd') {
+                player.src = "Images/human4.png";
+                frameIndex = 0;
+                animCooldown = 0;
+            }
+        }
+        
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+        window.addEventListener('dragstart', (e) => e.preventDefault());
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+        
+        if (stopBtn) stopBtn.onclick = () => {
+            paused = !paused;
+            stopBtn.style.background = paused ? "#aa0055" : "#ff007f";
         };
-
-        const nRect = {
-            l: n.x,
-            r: n.x + 18,
-            t: n.y,
-            b: n.y + 50
+        if (resetBtn) resetBtn.onclick = () => {
+            resetGame();
+            if (paused) { paused = false; if(stopBtn) stopBtn.style.background = "#ff007f"; }
         };
-
-        if (
-            pRect.l < nRect.r &&
-            pRect.r > nRect.l &&
-            pRect.t < nRect.b &&
-            pRect.b > nRect.t
-        ) {
-            reset();
-        }
-
-        if (n.y > 550) {
-            n.el.remove();
-            needles.splice(i, 1);
-        }
-    });
-
-    const doorX = parseInt(door.style.left);
-
-    if (
-        x + 60 > doorX &&
-        x < doorX + 100 &&
-        y < 250
-    ) {
-        window.location.href = "foto_level2.html";
-    }
-
-    if (keys["a"] || keys["d"]) {
-        if (animCooldown-- <= 0) {
-            const frames = keys["a"] ? framesLeft : framesRight;
-            player.src = frames[frameIndex];
-            frameIndex = (frameIndex + 1) % 3;
-            animCooldown = 6;
-        }
-    } else {
-        player.src = "Images/human4.png";
-    }
-
-    player.style.left = x + "px";
-    player.style.bottom = y + "px";
-
-    let scrollX = x - 500;
-    if (scrollX < 0) scrollX = 0;
-    if (scrollX > 3900) scrollX = 3900;
-
-    world.style.transform = `translateX(${-scrollX}px)`;
-
-    requestAnimationFrame(update);
-}
-
-update();
+        
+        setTimeout(() => updateDoorBounds(), 30);
+        resetGame();
+        updateGame();
+        
+        setInterval(() => {
+            if (needles.length > 65) {
+                let removed = 0;
+                while (needles.length > 50 && removed < 20) {
+                    const old = needles.shift();
+                    if (old && old.el && old.el.remove) old.el.remove();
+                    removed++;
+                }
+            }
+        }, 6000);
+    })();
 </script>
 
 </body>
+
 </html>
